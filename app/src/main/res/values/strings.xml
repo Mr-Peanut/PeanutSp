@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">PeanutSp</string>
+    <string name="action_settings">Settings</string>
+    <string name="sendButton">发声</string>
+    <string name="combinButton">导出文件</string>
+    <string name="inputHint">请输入要发声的内容，注意内容不要超过1024字节</string>
+    <string name="title_activity_second">SecondActivity</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+    <string name="webstatu">地址：</string>
+    <string name="confirmWorning">是否退出程序?</string>
+    <string name="conclequit">取消</string>
+    <string name="confirmquit">退出</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+</resources>
