@@ -46,5 +46,16 @@
         android:layout_alignBaseline="@+id/sendButton"
         android:layout_toEndOf="@+id/sendButton"
         android:text="@string/combinButton" />
-    </RelativeLayout>
+
+    <Button
+        android:id="@+id/settingButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/combinButton"
+        android:layout_marginStart="18dp"
+        android:layout_toEndOf="@+id/combinButton"
+        android:text="@string/settingButton"
+        android:visibility="invisible" />
+
+</RelativeLayout>
 

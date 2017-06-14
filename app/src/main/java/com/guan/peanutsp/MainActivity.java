@@ -1,15 +1,22 @@
 package com.guan.peanutsp;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Bundle;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -17,20 +24,10 @@ import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import java.util.ArrayList;
 import java.util.List;
 public class MainActivity extends AppCompatActivity  {
-    private TextView input;
-    private Button sendButton;
-    private Button combinButton;
-    private TextView statuText;
-    private RadioGroup gender;
-    private RadioGroup language;
-    private SeekBar volAdjuster;
-    private SeekBar speedAdjuster;
-    private DrawerLayout drawerLayout;
-    private Toolbar toolbar;
-    private final static String CONTROLERACTION="com.guan.SpeakerControler";
     public static final int TYPE_GENDER=0;
     public static final int TYPE_LANGUAGE=1;
     public static final int TYPE_VOLUME=2;
@@ -41,9 +38,20 @@ public class MainActivity extends AppCompatActivity  {
     public static final int GENDER_FEMALE=0;
     public static final int LANGUAGE_CN=0;
     public static final int LANGUAGE_EN=1;
+    private static final String PACKAGE_URL_SCHEME = "package:";
+    private final static String CONTROLERACTION = "com.guan.SpeakerControler";
     public static List<Activity> activities=new ArrayList<>();
-    private MDrawerListener myToggleLister;
-//    private static int backTime=0;
+    private TextView input;
+    private TextView statuText;
+    private RadioGroup gender;
+    private SeekBar volAdjuster;
+    private SeekBar speedAdjuster;
+    private DrawerLayout drawerLayout;
+    private boolean getPermission = false;
+    private Button settingButton;
+    private int REQUEST_CODE = 1;
+
+    //    private static int backTime=0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -51,6 +59,57 @@ public class MainActivity extends AppCompatActivity  {
         activities.add(this);
         setContentView(R.layout.activity_main);
         initView();
+        permissionCheck();
+    }
+
+    private void permissionCheck() {
+        Log.e("permissionCheck", "permissionCheck");
+        if ((ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE);
+            Log.e("permissionCheck", "permissionCheck");
+        } else {
+            getPermission = true;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                getPermission = true;
+            } else {
+                getPermission = false;
+                Toast.makeText(this, "储存权限被禁止，请在设置—应用—" + String.valueOf(getApplicationContext().getPackageManager().getApplicationLabel(getApplicationInfo()))
+                        + "—权限—储存，打开储存权限后重新打开APP", Toast.LENGTH_SHORT).show();
+                settingButton.setVisibility(View.VISIBLE);
+                settingButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent settingIntent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        settingIntent.setData(Uri.parse(PACKAGE_URL_SCHEME + getPackageName()));
+                        startActivity(settingIntent);
+                    }
+                });
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+
+        super.onResume();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        permissionCheck();
+        if (getPermission) {
+            settingButton.setVisibility(View.INVISIBLE);
+        } else {
+            settingButton.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
@@ -73,18 +132,19 @@ public class MainActivity extends AppCompatActivity  {
     }
     private void initSetting() {
         gender= (RadioGroup) findViewById(R.id.speakergender);
-        language = (RadioGroup) findViewById(R.id.speakerLanguage);
+        RadioGroup language = (RadioGroup) findViewById(R.id.speakerLanguage);
         volAdjuster = (SeekBar) findViewById(R.id.voladjuster);
         speedAdjuster= (SeekBar) findViewById(R.id.speedjuster);
         RadioGroup.OnCheckedChangeListener groupListener = new GroupListener();
         gender.setOnCheckedChangeListener(groupListener);
         language.setOnCheckedChangeListener(groupListener);
-        SeekBar.OnSeekBarChangeListener mSeekbarListener = new SeekbarListener();
-        volAdjuster.setOnSeekBarChangeListener(mSeekbarListener);
-        speedAdjuster.setOnSeekBarChangeListener(mSeekbarListener);
+        SeekBar.OnSeekBarChangeListener mSeekBarListener = new SeekbarListener();
+        volAdjuster.setOnSeekBarChangeListener(mSeekBarListener);
+        speedAdjuster.setOnSeekBarChangeListener(mSeekBarListener);
     }
     private void initView() {
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        settingButton = (Button) findViewById(R.id.settingButton);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle(getResources().getString(R.string.app_name));
         toolbar.setLogo(R.mipmap.ic_launcher);
         toolbar.inflateMenu(R.menu.toolbar_menu);
@@ -112,7 +172,7 @@ public class MainActivity extends AppCompatActivity  {
                 statuText.setText("你输入了" + s.length() + "字节，还可以输入" + (1024 - s.length()) + "字节");
             }
         });
-        sendButton = (Button) findViewById(R.id.sendButton);
+        Button sendButton = (Button) findViewById(R.id.sendButton);
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -125,8 +185,8 @@ public class MainActivity extends AppCompatActivity  {
                 }
             }
         });
-        combinButton = (Button) findViewById(R.id.combinButton);
-        combinButton.setOnClickListener(new View.OnClickListener() {
+        Button combineButton = (Button) findViewById(R.id.combinButton);
+        combineButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //导出文件的逻辑
@@ -134,7 +194,7 @@ public class MainActivity extends AppCompatActivity  {
         });
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         MyToggle myToggle = new MyToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        myToggleLister = new MDrawerListener() {
+        MDrawerListener myToggleLister = new MDrawerListener() {
             @Override
             public void OnDrawerOpen() {
                 Intent intent = new Intent(MainActivity.this, SpeakerService.class);
@@ -149,6 +209,26 @@ public class MainActivity extends AppCompatActivity  {
         drawerLayout.setDrawerListener(myToggle);
         myToggle.syncState();
     }
+
+    private void sendControllerMes(int type, String extraTag, int value) {
+        Intent controlIntent = new Intent(CONTROLERACTION);
+        controlIntent.putExtra("CONTROLTYPE", type);
+        controlIntent.putExtra(extraTag, value);
+        sendBroadcast(controlIntent);
+    }
+
+    @Override
+    protected void onDestroy() {
+        activities.remove(this);
+        super.onDestroy();
+    }
+
+    @Override
+    public void finish() {
+        stopService(new Intent(this, SpeakerService.class));
+        super.finish();
+    }
+
     class GroupListener implements RadioGroup.OnCheckedChangeListener {
         @Override
         public void onCheckedChanged(RadioGroup group, int checkedId) {
@@ -174,6 +254,7 @@ public class MainActivity extends AppCompatActivity  {
             }
         }
     }
+
     class SeekbarListener implements SeekBar.OnSeekBarChangeListener{
 
         @Override
@@ -197,23 +278,5 @@ public class MainActivity extends AppCompatActivity  {
                     break;
             }
         }
-    }
-    private void sendControllerMes(int type, String extraTag , int value){
-        Intent controlIntent = new Intent(CONTROLERACTION);
-        controlIntent.putExtra("CONTROLTYPE",type);
-        controlIntent.putExtra(extraTag,value);
-        sendBroadcast(controlIntent);
-    }
-
-    @Override
-    protected void onDestroy() {
-        activities.remove(this);
-        super.onDestroy();
-    }
-
-    @Override
-    public void finish() {
-        stopService(new Intent(this,SpeakerService.class));
-        super.finish();
     }
 }
