@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -26,14 +25,6 @@ import static com.baidu.tts.client.SpeechSynthesizer.AUDIO_BITRATE_AMR_15K85;
 import static com.baidu.tts.client.SpeechSynthesizer.AUDIO_ENCODE_AMR;
 import static com.baidu.tts.client.SpeechSynthesizer.MIX_MODE_DEFAULT;
 public class SpeakerService extends Service {
-    private BroadcastReceiver speakerControler;
-    public SpeakerService() {
-    }
-    @Override
-    public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
     static final String CN_FEMALE_FILENAME = "bd_etts_speech_female.dat";
     static final String CN_MALE_FILENAME = "bd_etts_speech_male.dat";
     static final String CN_TEXT_FILENAME = "bd_etts_text.dat";
@@ -41,8 +32,19 @@ public class SpeakerService extends Service {
     static final String EN_MALE_FILENAME = "bd_etts_speech_male_en.dat";
     static final String EN_TEXT_FILENAME = "bd_etts_text_en.dat";
     private final static String CONTROLERACTION="com.guan.SpeakerControler";
+    private BroadcastReceiver speakerControler;
     private SpeechSynthesizer speechSynthesizer;
     private String parentPath;
+
+    public SpeakerService() {
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        // TODO: Return the communication channel to the service.
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -149,7 +151,7 @@ public class SpeakerService extends Service {
         if (parentPath == null) {
             Toast.makeText(getApplicationContext(), "获取储存卡位置失败，请打开应用读取内存卡的权限", Toast.LENGTH_SHORT).show();
         } else {
-           if( creatParentDir()) {
+            if (createParentDir()) {
                copyFileFromAssetsToSDcard(CN_FEMALE_FILENAME);
                copyFileFromAssetsToSDcard(CN_MALE_FILENAME);
                copyFileFromAssetsToSDcard(CN_TEXT_FILENAME);
@@ -161,28 +163,38 @@ public class SpeakerService extends Service {
     }
 
     private String getParentPath() {
-        String appName = null;
-        String parentPath = null;
-        appName = "PeanutSpeaker0";
-        parentPath = Environment.getExternalStorageDirectory().toString();
-        return parentPath + "/" + appName;
+//        String appName = null;
+//        String parentPath = null;
+//        appName = "PeanutSpeaker0";
+//        parentPath = Environment.getExternalStorageDirectory().toString();
+//        return parentPath + "/" + appName;
+        File cacheDir = getApplicationContext().getExternalCacheDir();
+        if (cacheDir == null)
+            cacheDir = getApplicationContext().getCacheDir();
+        return cacheDir.getAbsolutePath() + File.separator + "mouldData";
     }
 
-    private boolean creatParentDir() {
+    private boolean createParentDir() {
         File parent = new File(parentPath);
-        if (!Environment.getExternalStorageDirectory().equals(Environment.MEDIA_MOUNTED)) {
-            Toast.makeText(getApplicationContext(), "SD卡不可用", Toast.LENGTH_SHORT).show();
-            return false;
-        }else
+//        Log.e("parentPath",String.valueOf(parent.exists()));
+//        if (!Environment.getExternalStorageDirectory().equals(Environment.MEDIA_MOUNTED)) {
+//            Toast.makeText(getApplicationContext(), "SD卡不可用", Toast.LENGTH_SHORT).show();
+//            return false;
+//        }else
+        parent.mkdir();
             return true;
     }
 
     private void copyFileFromAssetsToSDcard(String filename) {
         File file = new File(parentPath + File.separator + filename);
         if (!file.exists()) {
+
             InputStream inputStream = null;
             OutputStream outputStream = null;
             try {
+                if (!file.getParentFile().exists())
+                    file.getParentFile().mkdir();
+                file.createNewFile();
                 inputStream = getResources().getAssets().open(filename);
                 outputStream = new FileOutputStream(parentPath + File.separator + filename);
                 byte[] buffer = new byte[1024];
